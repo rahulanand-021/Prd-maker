@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRD Starter</title>
+<style>
+  :root {
+    --paper: #f5f7fa;
+    --ink: #1b2430;
+    --muted: #5d6b7c;
+    --line: #cfd8e3;
+    --accent: #2447c8;
+    --accent-dark: #1a359a;
+    --sheet: #ffffff;
+    --error: #b3261e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 48px 20px 64px; }
+  h1 { font-family: Georgia, "Times New Roman", serif; font-size: 2.4rem; margin: 0 0 8px; letter-spacing: -0.5px; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  label { display: block; font-weight: 600; margin-bottom: 8px; }
+  textarea {
+    width: 100%; min-height: 96px; padding: 12px 14px; font: inherit; color: inherit;
+    border: 1.5px solid var(--line); border-radius: 6px; background: var(--sheet); resize: vertical;
+  }
+  textarea:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 12px; flex-wrap: wrap; }
+  .count { color: var(--muted); font-size: 0.9rem; }
+  button {
+    font: inherit; font-weight: 600; padding: 10px 20px; border-radius: 6px; cursor: pointer;
+    border: 1.5px solid var(--accent); background: var(--accent); color: #fff;
+  }
+  button:hover:not(:disabled) { background: var(--accent-dark); border-color: var(--accent-dark); }
+  button:disabled { opacity: 0.55; cursor: not-allowed; }
+  button.secondary { background: transparent; color: var(--accent); }
+  button.secondary:hover:not(:disabled) { background: #e8edfb; color: var(--accent-dark); }
+  #message { margin-top: 18px; min-height: 1.4em; color: var(--muted); }
+  #message.error { color: var(--error); font-weight: 600; }
+  #result {
+    display: none; margin-top: 12px; background: var(--sheet); border: 1.5px solid var(--line);
+    border-left: 5px solid var(--accent); border-radius: 6px; padding: 20px 22px;
+  }
+  #prd { white-space: pre-wrap; margin: 0 0 16px; font-family: Georgia, "Times New Roman", serif; font-size: 1.05rem; line-height: 1.6; }
+  .note { margin-top: 28px; font-size: 0.85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>PRD Starter</h1>
+  <p class="sub">Type a one-line product idea. Get a short first draft of the requirements.</p>
+
+  <label for="idea">Your product idea</label>
+  <textarea id="idea" maxlength="200" placeholder="An app that helps people split household chores fairly"></textarea>
+  <div class="row">
+    <span class="count"><span id="chars">0</span> / 200</span>
+    <button id="go">Generate PRD</button>
+  </div>
+
+  <div id="message" role="status" aria-live="polite"></div>
+
+  <section id="result" aria-label="Your PRD draft">
+    <pre id="prd"></pre>
+    <button id="copy" class="secondary">Copy draft</button>
+  </section>
+
+  <p class="note">AI-generated draft. Review it before using it. Limit: 5 drafts per day.</p>
+</main>
+
+<script>
+  const ideaBox = document.getElementById("idea");
+  const chars = document.getElementById("chars");
+  const goBtn = document.getElementById("go");
+  const message = document.getElementById("message");
+  const result = document.getElementById("result");
+  const prdBox = document.getElementById("prd");
+  const copyBtn = document.getElementById("copy");
+
+  ideaBox.addEventListener("input", () => { chars.textContent = ideaBox.value.length; });
+
+  function say(text, isError) {
+    message.textContent = text;
+    message.className = isError ? "error" : "";
+  }
+
+  goBtn.addEventListener("click", async () => {
+    const idea = ideaBox.value.trim();
+    if (!idea) { say("Please type a product idea first.", true); return; }
+
+    goBtn.disabled = true;
+    result.style.display = "none";
+    say("Writing your draft...", false);
+
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea })
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        say(data.error || "Something went wrong, please try again.", true);
+      } else {
+        prdBox.textContent = data.prd;
+        result.style.display = "block";
+        say(data.remaining + " free drafts left today.", false);
+      }
+    } catch (e) {
+      say("Something went wrong, please try again.", true);
+    }
+    goBtn.disabled = false;
+  });
+
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(prdBox.textContent);
+      copyBtn.textContent = "Copied";
+    } catch (e) {
+      copyBtn.textContent = "Copy failed, select the text instead";
+    }
+    setTimeout(() => { copyBtn.textContent = "Copy draft"; }, 2000);
+  });
+</script>
+</body>
+</html>
