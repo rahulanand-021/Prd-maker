@@ -2,7 +2,7 @@
 // It runs on the server, so your secret key stays hidden from visitors.
 
 // ---- Easy settings you can change ----
-const MODEL = "gemini-2.5-flash";   // the AI model used
+const MODEL = "gemini-3.5-flash";   // the AI model used
 const MAX_IDEA_LENGTH = 200;        // characters allowed per idea
 const PER_VISITOR_DAILY_LIMIT = 5;  // generations per visitor per day
 const ALL_VISITORS_DAILY_LIMIT = 100; // total per day, protects your free quota
